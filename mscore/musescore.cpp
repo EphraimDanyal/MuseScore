@@ -148,6 +148,7 @@ int trimMargin = -1;
 bool noWebView = false;
 bool exportScoreParts = false;
 bool ignoreWarnings = false;
+bool experimentalPrintParts = false;
 
 QString mscoreGlobalShare;
 
@@ -2431,8 +2432,42 @@ static bool doProcessJob(QString jsonFile)
 //   processNonGui
 //---------------------------------------------------------
 
+static bool experimentalPartsPrint(const QString& inFilePath)
+      {
+      Score* score = mscore->readScore(inFilePath);
+      QString outName = QFileInfo(inFilePath).path() + QFileInfo(inFilePath).baseName() + ".pdf";
+      //save score pdf
+      bool res = mscore->savePdf(outName);
+      
+      //save extended score+parts and separate parts pdfs
+      //if no parts, generate parts from existing instruments
+      if (score->excerpts().size() == 0) {
+            auto excerpts = Excerpt::createAllExcerpt(score);
+            for (Excerpt* e : excerpts) {
+                  Score* nscore = new Score(e->oscore());
+                  e->setPartScore(nscore);
+                  nscore->setName(e->title()); // needed before AddExcerpt
+                  nscore->style()->set(StyleIdx::createMultiMeasureRests, true);
+                  score->startCmd();
+                  score->undo(new AddExcerpt(nscore));
+                  createExcerpt(e);
+                  score->endCmd();
+                  }
+            }
+      
+      QList<Score*> scores;
+      scores.append(score);
+      for (Excerpt* e : score->excerpts())
+            scores.append(e->partScore());
+      res &= mscore->savePdf(scores, outName);
+      return res;
+      }
+      
 static bool processNonGui(const QStringList& argv)
       {
+      if (experimentalPrintParts)
+            return experimentalPartsPrint(argv[0]);
+            
       if (pluginMode) {
             loadScores(argv);
             QString pn(pluginName);
@@ -5434,6 +5469,7 @@ int main(int argc, char* av[])
       parser.addOption(QCommandLineOption({"P", "export-score-parts"}, "Used with '-o <file>.pdf', export score and parts"));
       parser.addOption(QCommandLineOption({"f", "force"}, "Used with '-o <file>', ignore warnings reg. score being corrupted or from wrong version"));
       parser.addOption(QCommandLineOption({"b", "bitrate"}, "Used with '-o <file>.mp3', sets bitrate", "bitrate"));
+      parser.addOption(QCommandLineOption({"PP", "export-parts-separate"}, "Experimental export of score and parts as separate files"));
 
       parser.addPositionalArgument("scorefiles", "The files to open", "[scorefile...]");
 
@@ -5554,6 +5590,11 @@ int main(int argc, char* av[])
                   preferences.exportMp3BitRate = 128;
            }
 
+      if (parser.isSet("PP")) {
+            experimentalPrintParts = true;
+            MScore::noGui = true;
+            }
+            
       QStringList argv = parser.positionalArguments();
 
       mscoreGlobalShare = getSharePath();
