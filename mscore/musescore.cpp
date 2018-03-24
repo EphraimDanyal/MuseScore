@@ -2435,9 +2435,16 @@ static bool doProcessJob(QString jsonFile)
 static bool experimentalPartsPrint(const QString& inFilePath)
       {
       Score* score = mscore->readScore(inFilePath);
-      QString outName = QFileInfo(inFilePath).path() + QFileInfo(inFilePath).baseName() + ".pdf";
+      QString outPath = QFileInfo(inFilePath).path() + "/";
+      QString outName = outPath + QFileInfo(inFilePath).baseName() + ".pdf";
       //save score pdf
-      bool res = mscore->savePdf(outName);
+      if (!styleFile.isEmpty()) {
+            QFile f(styleFile);
+            if (f.open(QIODevice::ReadOnly))
+                  score->style()->load(&f);
+            }
+      score->switchToPageMode();
+      bool res = mscore->savePdf(score, outName);
       
       //save extended score+parts and separate parts pdfs
       //if no parts, generate parts from existing instruments
@@ -2457,9 +2464,14 @@ static bool experimentalPartsPrint(const QString& inFilePath)
       
       QList<Score*> scores;
       scores.append(score);
-      for (Excerpt* e : score->excerpts())
+      for (Excerpt* e : score->excerpts()) {
             scores.append(e->partScore());
-      res &= mscore->savePdf(scores, outName);
+            QString partFileName = outPath + QFileInfo(inFilePath).baseName() + "-" + e->title() + ".pdf";
+            res &= mscore->savePdf(e->partScore(), partFileName);
+            }
+      QString outFullScoreName = outPath + QFileInfo(inFilePath).baseName() + "-Score_and_parts" + ".pdf";
+      res &= mscore->savePdf(scores, outFullScoreName);
+      delete score;
       return res;
       }
       
@@ -5600,7 +5612,7 @@ int main(int argc, char* av[])
       mscoreGlobalShare = getSharePath();
       iconPath = externalIcons ? mscoreGlobalShare + QString("icons/") :  QString(":/data/icons/");
 
-      if (!converterMode && !pluginMode) {
+      if (!converterMode && !pluginMode && !experimentalPrintParts) {
             if (!argv.isEmpty()) {
                   int ok = true;
                   for (const QString& message : argv) {
@@ -5715,7 +5727,7 @@ int main(int argc, char* av[])
             qApp->processEvents();
             }
 
-      if (!converterMode && !pluginMode) {
+      if (!converterMode && !pluginMode && !experimentalPrintParts) {
             struct PaletteItem {
                   QPalette::ColorRole role;
                   const char* name;
