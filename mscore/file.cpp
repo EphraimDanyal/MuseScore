@@ -1941,9 +1941,20 @@ bool MuseScore::savePdf(const QString& saveName)
 
 bool MuseScore::savePdf(Score* score, const QString& saveName)
       {
+      QPdfWriter printerDev(saveName);
+      return savePdf(score, printerDev);
+      }
+
+bool MuseScore::savePdf(QList<Score*> cs, const QString& saveName)
+      {
+      QPdfWriter printerDev(saveName);
+      return savePdf(cs, printerDev);
+      }
+
+bool MuseScore::savePdf(Score* score, QPdfWriter& printerDev)
+      {
       score->setPrinting(true);
       MScore::pdfPrinting = true;
-      QPdfWriter printerDev(saveName);
       printerDev.setResolution(preferences.exportPdfDpi);
       const PageFormat* pf = score->pageFormat();
       printerDev.setPageSize(QPageSize(pf->size(), QPageSize::Inch));
@@ -1986,30 +1997,22 @@ bool MuseScore::savePdf(Score* score, const QString& saveName)
       return true;
       }
 
-bool MuseScore::savePdf(QList<Score*> cs, const QString& saveName)
+bool MuseScore::savePdf(QList<Score *> cs, QPdfWriter& printerDev)
       {
       if (cs.empty())
             return false;
       Score* firstScore = cs[0];
 
-      QPrinter printerDev(QPrinter::HighResolution);
-      const PageFormat* pf = firstScore->pageFormat();
-      printerDev.setPaperSize(pf->size(), QPrinter::Inch);
-
+      printerDev.setResolution(preferences.exportPdfDpi);
       printerDev.setCreator("MuseScore Version: " VERSION);
-      printerDev.setFullPage(true);
       if (!printerDev.setPageMargins(QMarginsF()))
             qDebug("unable to clear printer margins");
-      printerDev.setColorMode(QPrinter::Color);
 
       QString title = firstScore->metaTag("workTitle");
       if (title.isEmpty()) // workTitle unset?
             title = firstScore->title(); // fall back to (root)score's tab title
       title += " - " + tr("Score and Parts");
-      printerDev.setDocName(title);
-      printerDev.setOutputFormat(QPrinter::PdfFormat);
-
-      printerDev.setOutputFileName(saveName);
+      printerDev.setTitle(title);
 
       QPainter p;
       if (!p.begin(&printerDev))
@@ -2028,7 +2031,7 @@ bool MuseScore::savePdf(QList<Score*> cs, const QString& saveName)
             MScore::pdfPrinting = true;
 
             const PageFormat* pf = s->pageFormat();
-            printerDev.setPaperSize(pf->size(), QPrinter::Inch);
+            printerDev.setPageSize(QPageSize(pf->size(), QPageSize::Inch));
 
             const QList<Page*> pl = s->pages();
             int pages    = pl.size();

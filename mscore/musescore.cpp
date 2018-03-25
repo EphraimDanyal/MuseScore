@@ -2436,7 +2436,10 @@ static bool experimentalPartsPrint(const QString& inFilePath)
       {
       Score* score = mscore->readScore(inFilePath);
       QString outPath = QFileInfo(inFilePath).path() + "/";
+
+      QJsonObject jsonForPdfs;
       QString outName = outPath + QFileInfo(inFilePath).baseName() + ".pdf";
+      jsonForPdfs["score"] = outName;
       //save score pdf
       if (!styleFile.isEmpty()) {
             QFile f(styleFile);
@@ -2444,8 +2447,13 @@ static bool experimentalPartsPrint(const QString& inFilePath)
                   score->style()->load(&f);
             }
       score->switchToPageMode();
-      bool res = mscore->savePdf(score, outName);
-      
+
+      QBuffer scoreDevice;
+      QPdfWriter writer(&scoreDevice);
+      bool res = mscore->savePdf(score, writer);
+      const QByteArray& pdfData = scoreDevice.readAll();
+      jsonForPdfs["scoreBin"] = QString::fromLatin1(pdfData.toBase64());
+
       //save extended score+parts and separate parts pdfs
       //if no parts, generate parts from existing instruments
       if (score->excerpts().size() == 0) {
@@ -2464,13 +2472,38 @@ static bool experimentalPartsPrint(const QString& inFilePath)
       
       QList<Score*> scores;
       scores.append(score);
+      QJsonArray partsArray;
+      QJsonArray partsNamesArray;
       for (Excerpt* e : score->excerpts()) {
             scores.append(e->partScore());
             QString partFileName = outPath + QFileInfo(inFilePath).baseName() + "-" + e->title() + ".pdf";
-            res &= mscore->savePdf(e->partScore(), partFileName);
+            QJsonValue partNameVal(partFileName);
+            partsNamesArray.append(partNameVal);
+            QBuffer partDevice;
+            QPdfWriter partWriter(&partDevice);
+            res &= mscore->savePdf(e->partScore(), partWriter);
+            const QByteArray& partData = partDevice.readAll();
+            QJsonValue partVal(QString::fromLatin1(partData.toBase64()));
+            partsArray.append(partVal);
             }
-      QString outFullScoreName = outPath + QFileInfo(inFilePath).baseName() + "-Score_and_parts" + ".pdf";
-      res &= mscore->savePdf(scores, outFullScoreName);
+      jsonForPdfs["parts"] = partsNamesArray;
+      jsonForPdfs["partsBin"] = partsArray;
+
+      //QString outFullScoreName = outPath + QFileInfo(inFilePath).baseName() + "-Score_and_parts" + ".pdf";
+      jsonForPdfs["scoreFullPostfix"] = QString("-Score_and_parts") + ".pdf";
+
+      QBuffer fullScoreDevice;
+      QPdfWriter fullScoreWriter(&fullScoreDevice);
+      res &= mscore->savePdf(scores, fullScoreWriter);
+      const QByteArray& fullScoreData = fullScoreDevice.readAll();
+      jsonForPdfs["scoreFullBin"] = QString::fromLatin1(fullScoreData.toBase64());
+
+      QJsonDocument jsonDoc(jsonForPdfs);
+      QFile file(outPath + "pdfsjson.json");
+      file.open(QIODevice::WriteOnly);
+      file.write(jsonDoc.toJson(QJsonDocument::Compact));
+      file.close();
+
       delete score;
       return res;
       }
