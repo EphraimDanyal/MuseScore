@@ -2448,10 +2448,11 @@ static bool experimentalPartsPrint(const QString& inFilePath)
             }
       score->switchToPageMode();
 
-      QBuffer scoreDevice;
+      QByteArray pdfData;
+      QBuffer scoreDevice(&pdfData);
+      scoreDevice.open(QIODevice::ReadWrite);
       QPdfWriter writer(&scoreDevice);
       bool res = mscore->savePdf(score, writer);
-      const QByteArray& pdfData = scoreDevice.readAll();
       jsonForPdfs["scoreBin"] = QString::fromLatin1(pdfData.toBase64());
 
       //save extended score+parts and separate parts pdfs
@@ -2479,10 +2480,11 @@ static bool experimentalPartsPrint(const QString& inFilePath)
             QString partFileName = outPath + QFileInfo(inFilePath).baseName() + "-" + e->title() + ".pdf";
             QJsonValue partNameVal(partFileName);
             partsNamesArray.append(partNameVal);
-            QBuffer partDevice;
+            QByteArray partData;
+            QBuffer partDevice(&partData);
+            partDevice.open(QIODevice::ReadWrite);
             QPdfWriter partWriter(&partDevice);
             res &= mscore->savePdf(e->partScore(), partWriter);
-            const QByteArray& partData = partDevice.readAll();
             QJsonValue partVal(QString::fromLatin1(partData.toBase64()));
             partsArray.append(partVal);
             }
@@ -2492,10 +2494,11 @@ static bool experimentalPartsPrint(const QString& inFilePath)
       //QString outFullScoreName = outPath + QFileInfo(inFilePath).baseName() + "-Score_and_parts" + ".pdf";
       jsonForPdfs["scoreFullPostfix"] = QString("-Score_and_parts") + ".pdf";
 
-      QBuffer fullScoreDevice;
+      QByteArray fullScoreData;
+      QBuffer fullScoreDevice(&fullScoreData);
+      fullScoreDevice.open(QIODevice::ReadWrite);
       QPdfWriter fullScoreWriter(&fullScoreDevice);
       res &= mscore->savePdf(scores, fullScoreWriter);
-      const QByteArray& fullScoreData = fullScoreDevice.readAll();
       jsonForPdfs["scoreFullBin"] = QString::fromLatin1(fullScoreData.toBase64());
 
       QJsonDocument jsonDoc(jsonForPdfs);
