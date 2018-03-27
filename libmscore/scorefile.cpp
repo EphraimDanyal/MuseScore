@@ -818,9 +818,9 @@ Score::FileError Score::loadCompressedMsc(QIODevice* io, bool ignoreVersionError
 
 Score::FileError Score::loadMsc(QString name, bool ignoreVersionError)
       {
-      info.setFile("/proc/self/fd/0");
+      info.setFile(name);
 
-      QFile f("/proc/self/fd/0");
+      QFile f(name);
       if (!f.open(QIODevice::ReadOnly)) {
             MScore::lastError = f.errorString();
             return FileError::FILE_OPEN_ERROR;
