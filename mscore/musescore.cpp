@@ -2434,7 +2434,7 @@ static bool doProcessJob(QString jsonFile)
 
 static bool experimentalPartsPrint(const QString& inFilePath)
       {
-      Score* score = mscore->readScore("/proc/self/fd/0");
+      Score* score = mscore->readScore(inFilePath);
       QString outPath = QFileInfo(inFilePath).path() + "/";
 
       QJsonObject jsonForPdfs;
