@@ -2477,8 +2477,7 @@ static bool experimentalPartsPrint(const QString& inFilePath)
       QJsonArray partsNamesArray;
       for (Excerpt* e : score->excerpts()) {
             scores.append(e->partScore());
-            QString partFileName = outPath + QFileInfo(inFilePath).baseName() + "-" + e->title() + ".pdf";
-            QJsonValue partNameVal(partFileName);
+            QJsonValue partNameVal(e->title());
             partsNamesArray.append(partNameVal);
             QByteArray partData;
             QBuffer partDevice(&partData);
@@ -2491,7 +2490,6 @@ static bool experimentalPartsPrint(const QString& inFilePath)
       jsonForPdfs["parts"] = partsNamesArray;
       jsonForPdfs["partsBin"] = partsArray;
 
-      //QString outFullScoreName = outPath + QFileInfo(inFilePath).baseName() + "-Score_and_parts" + ".pdf";
       jsonForPdfs["scoreFullPostfix"] = QString("-Score_and_parts") + ".pdf";
 
       QByteArray fullScoreData;
