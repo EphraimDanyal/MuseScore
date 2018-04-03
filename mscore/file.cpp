@@ -2004,6 +2004,9 @@ bool MuseScore::savePdf(QList<Score *> cs, QPdfWriter& printerDev)
       Score* firstScore = cs[0];
 
       printerDev.setResolution(preferences.exportPdfDpi);
+      const PageFormat* pf = firstScore->pageFormat();
+      printerDev.setPageSize(QPageSize(pf->size(), QPageSize::Inch));
+
       printerDev.setCreator("MuseScore Version: " VERSION);
       if (!printerDev.setPageMargins(QMarginsF()))
             qDebug("unable to clear printer margins");
