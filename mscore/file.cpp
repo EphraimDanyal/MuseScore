@@ -1945,12 +1945,6 @@ bool MuseScore::savePdf(Score* score, const QString& saveName)
       return savePdf(score, printerDev);
       }
 
-bool MuseScore::savePdf(QList<Score*> cs, const QString& saveName)
-      {
-      QPdfWriter printerDev(saveName);
-      return savePdf(cs, printerDev);
-      }
-
 bool MuseScore::savePdf(Score* score, QPdfWriter& printerDev)
       {
       score->setPrinting(true);
@@ -1997,25 +1991,30 @@ bool MuseScore::savePdf(Score* score, QPdfWriter& printerDev)
       return true;
       }
 
-bool MuseScore::savePdf(QList<Score *> cs, QPdfWriter& printerDev)
+bool MuseScore::savePdf(QList<Score*> cs, const QString& saveName)
       {
       if (cs.empty())
             return false;
       Score* firstScore = cs[0];
 
-      printerDev.setResolution(preferences.exportPdfDpi);
+      QPrinter printerDev(QPrinter::HighResolution);
       const PageFormat* pf = firstScore->pageFormat();
-      printerDev.setPageSize(QPageSize(pf->size(), QPageSize::Inch));
+      printerDev.setPaperSize(pf->size(), QPrinter::Inch);
 
       printerDev.setCreator("MuseScore Version: " VERSION);
+      printerDev.setFullPage(true);
       if (!printerDev.setPageMargins(QMarginsF()))
             qDebug("unable to clear printer margins");
+      printerDev.setColorMode(QPrinter::Color);
 
       QString title = firstScore->metaTag("workTitle");
       if (title.isEmpty()) // workTitle unset?
             title = firstScore->title(); // fall back to (root)score's tab title
       title += " - " + tr("Score and Parts");
-      printerDev.setTitle(title);
+      printerDev.setDocName(title);
+      printerDev.setOutputFormat(QPrinter::PdfFormat);
+
+      printerDev.setOutputFileName(saveName);
 
       QPainter p;
       if (!p.begin(&printerDev))
@@ -2034,7 +2033,7 @@ bool MuseScore::savePdf(QList<Score *> cs, QPdfWriter& printerDev)
             MScore::pdfPrinting = true;
 
             const PageFormat* pf = s->pageFormat();
-            printerDev.setPageSize(QPageSize(pf->size(), QPageSize::Inch));
+            printerDev.setPaperSize(pf->size(), QPrinter::Inch);
 
             const QList<Page*> pl = s->pages();
             int pages    = pl.size();

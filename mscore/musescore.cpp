@@ -2464,13 +2464,15 @@ static bool experimentalPartsPrint(const QString& inFilePath)
 
       jsonForPdfs["scoreFullPostfix"] = QString("-Score_and_parts") + ".pdf";
 
-      QByteArray fullScoreData;
-      QBuffer fullScoreDevice(&fullScoreData);
-      fullScoreDevice.open(QIODevice::ReadWrite);
-      QPdfWriter fullScoreWriter(&fullScoreDevice);
-      res &= mscore->savePdf(scores, fullScoreWriter);
+      QString tempFileName = outPath + "tempPdf.pdf";
+      res &= mscore->savePdf(scores, tempFileName);
+      QFile tempPdf(tempFileName);
+      tempPdf.open(QIODevice::ReadWrite);
+      QByteArray fullScoreData = tempPdf.readAll();
+      //tempPdf.remove();
+            
       jsonForPdfs["scoreFullBin"] = QString::fromLatin1(fullScoreData.toBase64());
-
+            
       QJsonDocument jsonDoc(jsonForPdfs);
       const QString& jsonPath{"/dev/stdout"};
       QFile file(jsonPath);

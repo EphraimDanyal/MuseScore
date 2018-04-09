@@ -598,7 +598,6 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       bool savePdf(Score* cs, const QString& saveName);
       bool savePdf(QList<Score*> cs, const QString& saveName);
       bool savePdf(Score* cs, QPdfWriter& printer);
-      bool savePdf(QList<Score*> cs, QPdfWriter& printer);
 
       Score* readScore(const QString& name);
 
