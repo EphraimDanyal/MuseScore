@@ -2469,8 +2469,7 @@ static bool experimentalPartsPrint(const QString& inFilePath)
       QFile tempPdf(tempFileName);
       tempPdf.open(QIODevice::ReadWrite);
       QByteArray fullScoreData = tempPdf.readAll();
-      //tempPdf.remove();
-            
+      tempPdf.remove();
       jsonForPdfs["scoreFullBin"] = QString::fromLatin1(fullScoreData.toBase64());
             
       QJsonDocument jsonDoc(jsonForPdfs);
