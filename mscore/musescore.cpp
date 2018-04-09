@@ -2472,7 +2472,7 @@ static bool experimentalPartsPrint(const QString& inFilePath)
       jsonForPdfs["scoreFullBin"] = QString::fromLatin1(fullScoreData.toBase64());
 
       QJsonDocument jsonDoc(jsonForPdfs);
-      const QString& jsonPath{"/Users/admin/123.json"}; //{"/proc/self/fd/1"}
+      const QString& jsonPath{"/dev/stdout"};
       QFile file(jsonPath);
       file.open(QIODevice::WriteOnly);
       file.write(jsonDoc.toJson(QJsonDocument::Compact));
