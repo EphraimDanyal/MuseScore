@@ -2543,7 +2543,7 @@ static bool experimentalPartsMedia(const QString& inFilePath)
       jsonForMedia["partsPngs"] = partsPngsArray;
             
       QJsonDocument jsonDoc(jsonForMedia);
-      const QString& jsonPath{"/Users/admin/123.json"}; //{"/proc/self/fd/1"}
+      const QString& jsonPath{"/dev/stdout"}; //{"/proc/self/fd/1"}
       QFile file(jsonPath);
       file.open(QIODevice::WriteOnly);
       file.write(jsonDoc.toJson(QJsonDocument::Compact));
