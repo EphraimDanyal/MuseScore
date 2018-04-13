@@ -169,6 +169,7 @@ QErrorMessage* errorMessage;
 const char* voiceActions[] = { "voice-1", "voice-2", "voice-3", "voice-4" };
 
 extern bool savePositions(Score*, const QString& name, bool segments );
+extern bool savePositions(Score*, QIODevice* device, bool segments );
 extern TextPalette* textPalette;
 
 static constexpr double SCALE_MAX  = 16.0;
@@ -2508,6 +2509,8 @@ static bool experimentalPartsMedia(const QString& inFilePath)
       QJsonArray partsArray;
       QJsonArray partsNamesArray;
       QJsonArray partsPngsArray;
+      QJsonArray partsSposArray;
+      QJsonArray partsMposArray;
       bool res = true;
       for (Excerpt* e : score->excerpts()) {
             Score* partScore = e->partScore();
@@ -2536,19 +2539,38 @@ static bool experimentalPartsMedia(const QString& inFilePath)
                   QJsonValue partPngVal(QString::fromLatin1(partDataPng.toBase64()));
                   onePartPngsArray.append(partPngVal);
                   }
+            
             partsPngsArray.append(onePartPngsArray);
+            
+            //export .spos
+            QByteArray partDataPos;
+            QBuffer partPosDevice(&partDataPos);
+            partPosDevice.open(QIODevice::ReadWrite);
+            savePositions(partScore, &partPosDevice, true);
+            QJsonValue partSposVal(QString::fromLatin1(partDataPos.toBase64()));
+            partsSposArray.append(partSposVal);
+            partPosDevice.close();
+            partDataPos.clear();
+            
+            //export .mpos
+            partPosDevice.open(QIODevice::ReadWrite);
+            savePositions(partScore, &partPosDevice, false);
+            QJsonValue partMposVal(QString::fromLatin1(partDataPos.toBase64()));
+            partsMposArray.append(partMposVal);
       }
       jsonForMedia["parts"] = partsNamesArray;
       jsonForMedia["partsMp3"] = partsArray;
       jsonForMedia["partsPngs"] = partsPngsArray;
-            
+      jsonForMedia["partsMposXML"] = partsMposArray;
+      jsonForMedia["partsSposXML"] = partsSposArray;
+
       QJsonDocument jsonDoc(jsonForMedia);
-      const QString& jsonPath{"/dev/stdout"}; //{"/proc/self/fd/1"}
+      const QString& jsonPath{"/dev/stdout"};
       QFile file(jsonPath);
       file.open(QIODevice::WriteOnly);
       file.write(jsonDoc.toJson(QJsonDocument::Compact));
       file.close();
-      
+
       delete score;
       return true;
       }
