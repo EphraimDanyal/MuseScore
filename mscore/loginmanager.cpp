@@ -11,6 +11,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "globals.h"
 #include "loginmanager.h"
 #include "musescore.h"
 #include "libmscore/score.h"
@@ -21,8 +22,6 @@
 namespace Ms {
 
 extern QString dataPath;
-
-static const char* MUSESCORE_HOST = "api.musescore.com";
 
 //---------------------------------------------------------
 //   LoginManager
@@ -177,7 +176,7 @@ void LoginManager::login(QString login, QString password)
                 this, SLOT(onAccessTokenRequestReady(QByteArray)), Qt::UniqueConnection);
 
       KQOAuthRequest_XAuth *oauthRequest = new KQOAuthRequest_XAuth(this);
-      oauthRequest->initRequest(KQOAuthRequest::AccessToken, QUrl(QString("https://%1/oauth/access_token").arg(MUSESCORE_HOST)));
+      oauthRequest->initRequest(KQOAuthRequest::AccessToken, QUrl(apiURL + "/oauth/access_token"));
       oauthRequest->setConsumerKey(_consumerKey);
       oauthRequest->setConsumerSecretKey(_consumerSecret);
       oauthRequest->setXAuthLogin(login, password);
@@ -259,7 +258,7 @@ void LoginManager::getUser()
             return;
             }
       KQOAuthRequest * oauthRequest = new KQOAuthRequest();
-      oauthRequest->initRequest(KQOAuthRequest::AuthorizedRequest, QUrl(QString("https://%1/services/rest/me.json").arg(MUSESCORE_HOST)));
+      oauthRequest->initRequest(KQOAuthRequest::AuthorizedRequest, QUrl(apiURL + "/services/rest/me.json"));
       oauthRequest->setHttpMethod(KQOAuthRequest::GET);
       oauthRequest->setConsumerKey(_consumerKey);
       oauthRequest->setConsumerSecretKey(_consumerSecret);
@@ -311,7 +310,7 @@ void LoginManager::getScore(int nid)
             return;
             }
       KQOAuthRequest * oauthRequest = new KQOAuthRequest();
-      oauthRequest->initRequest(KQOAuthRequest::AuthorizedRequest, QUrl(QString("https://%1/services/rest/score/%2.json").arg(MUSESCORE_HOST).arg(nid)));
+      oauthRequest->initRequest(KQOAuthRequest::AuthorizedRequest, QUrl(apiURL + QString("/services/rest/score/%2.json").arg(nid)));
       oauthRequest->setHttpMethod(KQOAuthRequest::GET);
       oauthRequest->setConsumerKey(_consumerKey);
       oauthRequest->setConsumerSecretKey(_consumerSecret);
@@ -331,7 +330,7 @@ void LoginManager::getScore(int nid)
 void LoginManager::getMediaUrl(const QString& nid, const QString& vid, const QString& encoding)
       {
       KQOAuthRequest * oauthRequest = new KQOAuthRequest();
-      QString url = QString("https://%1/services/rest/signedurl/%2/%3/%4.json").arg(MUSESCORE_HOST).arg(nid).arg(vid).arg(encoding);
+      QString url = apiURL + QString("/services/rest/signedurl/%2/%3/%4.json").arg(nid).arg(vid).arg(encoding);
       oauthRequest->initRequest(KQOAuthRequest::AuthorizedRequest, QUrl(url));
       oauthRequest->setHttpMethod(KQOAuthRequest::GET);
       oauthRequest->setConsumerKey(_consumerKey);
@@ -492,9 +491,9 @@ void LoginManager::upload(const QString &path, int nid, const QString &title, co
       {
       //qDebug() << "file upload";
       KQOAuthRequest *oauthRequest = new KQOAuthRequest(this);
-      QUrl url(QString("https://%1/services/rest/score.json").arg(MUSESCORE_HOST));
+      QUrl url(apiURL + "/services/rest/score.json");
       if (nid > 0)
-            url = QUrl(QString("https://%1/services/rest/score/%2/update.json").arg(MUSESCORE_HOST).arg(nid));
+            url = QUrl(apiURL + QString("/services/rest/score/%2/update.json").arg(nid));
       oauthRequest->initRequest(KQOAuthRequest::AuthorizedRequest, url);
       oauthRequest->setConsumerKey(_consumerKey);
       oauthRequest->setConsumerSecretKey(_consumerSecret);

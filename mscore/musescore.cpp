@@ -148,6 +148,7 @@ int trimMargin = -1;
 bool noWebView = false;
 bool exportScoreParts = false;
 bool ignoreWarnings = false;
+QString apiURL = "https://api.musescore.com";
 
 QString mscoreGlobalShare;
 
@@ -5434,6 +5435,7 @@ int main(int argc, char* av[])
       parser.addOption(QCommandLineOption({"P", "export-score-parts"}, "Used with '-o <file>.pdf', export score and parts"));
       parser.addOption(QCommandLineOption({"f", "force"}, "Used with '-o <file>', ignore warnings reg. score being corrupted or from wrong version"));
       parser.addOption(QCommandLineOption({"b", "bitrate"}, "Used with '-o <file>.mp3', sets bitrate", "bitrate"));
+      parser.addOption(QCommandLineOption({"", "set-api"}, "Used to customize login manager api for tests and development", "set-api"));
 
       parser.addPositionalArgument("scorefiles", "The files to open", "[scorefile...]");
 
@@ -5553,6 +5555,9 @@ int main(int argc, char* av[])
             if (!ok)
                   preferences.exportMp3BitRate = 128;
            }
+
+      if (parser.isSet("set-api"))
+            apiURL = parser.value("set-api");
 
       QStringList argv = parser.positionalArguments();
 

@@ -36,6 +36,7 @@ extern double guiScaling;
 extern int trimMargin;
 extern bool noWebView;
 extern bool ignoreWarnings;
+extern QString apiURL;
 
 //---------------------------------------------------------
 // MsWidget
