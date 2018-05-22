@@ -155,6 +155,18 @@ KQOAuthManager::~KQOAuthManager()
     delete d_ptr;
 }
 
+static void debugRequest(QNetworkRequest request, QByteArray data = QByteArray())
+{
+      qDebug() << "---API REQUEST START---";
+      qDebug() << request.url().toString();
+      const QList<QByteArray>& rawHeaderList(request.rawHeaderList());
+      foreach (QByteArray rawHeader, rawHeaderList) {
+      qDebug() << request.rawHeader(rawHeader);
+      }
+      qDebug() << data;
+      qDebug() << "---API REQUEST END---";
+}
+
 void KQOAuthManager::executeRequest(KQOAuthRequest *request) {
     Q_D(KQOAuthManager);
 
@@ -250,6 +262,9 @@ void KQOAuthManager::executeRequest(KQOAuthRequest *request) {
                  this, SLOT(slotError(QNetworkReply::NetworkError)));
         d->requestMap.insert( request, reply );
     }
+
+    qDebug() << "-------------------------";
+    debugRequest(networkRequest);
 
     d->r->requestTimerStart();
 }
@@ -363,6 +378,10 @@ void KQOAuthManager::executeAuthorizedRequest(KQOAuthRequest *request, int id) {
                  this, SLOT(requestTimeout()));
         d->requestMap.insert( request, reply );
     }
+
+    qDebug() << "-------------------------";
+    debugRequest(networkRequest);
+
     d->requestIds.insert(reply, id);
     d->r->requestTimerStart();
 }
@@ -461,6 +480,9 @@ void KQOAuthManager::getUserAuthorization(QUrl authorizationEndpoint) {
     query.addQueryItem(tokenParam.first, tokenParam.second);
     openWebPageUrl.setQuery(query);
 #endif
+
+    qDebug() << "---API--- Auth url query";
+    qDebug() << query.toString();
 
     if (d->handleAuthPageOpening) {
         // Open the user's default browser to the resource authorization page provided
@@ -604,6 +626,10 @@ void KQOAuthManager::onRequestReplyReceived() {
     QMultiMap<QString, QString> responseTokens;
 
     responseTokens = d->createTokensFromResponse(networkReply);
+    qDebug() << "---API--- response tokens";
+    for (auto it = responseTokens.cbegin(); it != responseTokens.cend(); ++it) {
+          qDebug() << it.key() << " --- " << it.value();
+          }
     d->opaqueRequest->clearRequest();
     d->opaqueRequest->setHttpMethod(KQOAuthRequest::POST);   // XXX FIXME: Convenient API does not support GET
     emit requestReady(networkReply);
