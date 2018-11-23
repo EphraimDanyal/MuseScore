@@ -1965,9 +1965,9 @@ bool MuseScore::saveAs(Score* cs_, bool saveCopy, const QString& path, const QSt
             rv = savePdf(cs_, fn);
             }
       else if (ext == "png") {
-            // save as png file *.png
+            //save as png file *.png
             cs_->switchToPageMode();
-            rv = savePng(cs_, fn);
+            //rv = savePng(cs_, fn);
             }
       else if (ext == "svg") {
             // save as svg file *.svg
@@ -2034,8 +2034,17 @@ bool MuseScore::savePdf(const QString& saveName)
 
 bool MuseScore::savePdf(Score* cs_, const QString& saveName)
       {
+      QPdfWriter printerDev(saveName);
+      return savePdf(score, printerDev);
+      }
+
+bool MuseScore::savePdf(Score* cs_, QPdfWriter& printerDev)
+      {
       cs_->setPrinting(true);
       MScore::pdfPrinting = true;
+      printerDev.setResolution(preferences.exportPdfDpi);
+      const PageFormat* pf = cs_->pageFormat();
+      printerDev.setPageSize(QPageSize(pf->size(), QPageSize::Inch));
 
       QPdfWriter pdfWriter(saveName);
       pdfWriter.setResolution(preferences.getInt(PREF_EXPORT_PDF_DPI));
@@ -2522,9 +2531,9 @@ static QRect trim(QImage source, int margin)
 //    return true on success
 //---------------------------------------------------------
 
-bool MuseScore::savePng(Score* score, const QString& name)
+bool MuseScore::savePng(Score* score, QIODevice* deviceForPngs, int pageNum)
       {
-      return savePng(score, name, false, preferences.getBool(PREF_EXPORT_PNG_USETRANSPARENCY), preferences.getDouble(PREF_EXPORT_PNG_RESOLUTION), trimMargin, QImage::Format_ARGB32_Premultiplied);
+      return savePng(score, deviceForPngs, pageNum, false, preferences.getBool(PREF_EXPORT_PNG_USETRANSPARENCY), preferences.getDouble(PREF_EXPORT_PNG_RESOLUTION), trimMargin, QImage::Format_ARGB32_Premultiplied);
       }
 
 //---------------------------------------------------------
@@ -2532,7 +2541,7 @@ bool MuseScore::savePng(Score* score, const QString& name)
 //    return true on success
 //---------------------------------------------------------
 
-bool MuseScore::savePng(Score* score, const QString& name, bool screenshot, bool transparent, double convDpi, int _trimMargin, QImage::Format format)
+bool MuseScore::savePng(Score* score, QIODevice* deviceForPngs, int pageNumber, bool screenshot, bool transparent, double convDpi, int trimMargin, QImage::Format format)
       {
       bool rv = true;
       score->setPrinting(!screenshot);    // dont print page break symbols etc.
@@ -2545,91 +2554,54 @@ bool MuseScore::savePng(Score* score, const QString& name, bool screenshot, bool
           f = QImage::Format_ARGB32_Premultiplied;
 
       const QList<Page*>& pl = score->pages();
-      int pages = pl.size();
+      Page* page = pl.at(pageNumber);
 
-      int padding = QString("%1").arg(pages).size();
-      bool overwrite = false;
-      bool noToAll = false;
-      for (int pageNumber = 0; pageNumber < pages; ++pageNumber) {
-            Page* page = pl.at(pageNumber);
-
-            QRectF r;
-            if (_trimMargin >= 0) {
-                  QMarginsF margins(_trimMargin, _trimMargin, _trimMargin, _trimMargin);
-                  r = page->tbbox() + margins;
-                  }
-            else
-                  r = page->abbox();
-            int w = lrint(r.width()  * convDpi / DPI);
-            int h = lrint(r.height() * convDpi / DPI);
-
-            QImage printer(w, h, f);
-            printer.setDotsPerMeterX(lrint((convDpi * 1000) / INCH));
-            printer.setDotsPerMeterY(lrint((convDpi * 1000) / INCH));
-
-            printer.fill(transparent ? 0 : 0xffffffff);
-
-            double mag_ = convDpi / DPI;
-            MScore::pixelRatio = 1.0 / mag_;
-
-            QPainter p(&printer);
-            p.setRenderHint(QPainter::Antialiasing, true);
-            p.setRenderHint(QPainter::TextAntialiasing, true);
-            p.scale(mag_, mag_);
-            if (_trimMargin >= 0)
-                  p.translate(-r.topLeft());
-
-            QList<Element*> pel = page->elements();
-            qStableSort(pel.begin(), pel.end(), elementLessThan);
-            paintElements(p, pel);
-
-            if (format == QImage::Format_Indexed8) {
-                  //convert to grayscale & respect alpha
-                  QVector<QRgb> colorTable;
-                  colorTable.push_back(QColor(0, 0, 0, 0).rgba());
-                  if (!transparent) {
-                        for (int i = 1; i < 256; i++)
-                              colorTable.push_back(QColor(i, i, i).rgb());
-                        }
-                  else {
-                        for (int i = 1; i < 256; i++)
-                              colorTable.push_back(QColor(0, 0, 0, i).rgba());
-                        }
-                  printer = printer.convertToFormat(QImage::Format_Indexed8, colorTable);
-                  }
-
-            QString fileName(name);
-            if (fileName.endsWith(".png"))
-                  fileName = fileName.left(fileName.size() - 4);
-            fileName += QString("-%1.png").arg(pageNumber+1, padding, 10, QLatin1Char('0'));
-            if (!converterMode) {
-                  QFileInfo fip(fileName);
-                  if(fip.exists() && !overwrite) {
-                        if(noToAll)
-                              continue;
-                        QMessageBox msgBox( QMessageBox::Question, tr("Confirm Replace"),
-                              tr("\"%1\" already exists.\nDo you want to replace it?\n").arg(QDir::toNativeSeparators(fileName)),
-                              QMessageBox::Yes |  QMessageBox::YesToAll | QMessageBox::No |  QMessageBox::NoToAll);
-                        msgBox.setButtonText(QMessageBox::Yes, tr("Replace"));
-                        msgBox.setButtonText(QMessageBox::No, tr("Skip"));
-                        msgBox.setButtonText(QMessageBox::YesToAll, tr("Replace All"));
-                        msgBox.setButtonText(QMessageBox::NoToAll, tr("Skip All"));
-                        int sb = msgBox.exec();
-                        if(sb == QMessageBox::YesToAll) {
-                              overwrite = true;
-                              }
-                        else if (sb == QMessageBox::NoToAll) {
-                              noToAll = true;
-                              continue;
-                              }
-                        else if (sb == QMessageBox::No)
-                              continue;
-                        }
-                  }
-            rv = printer.save(fileName, "png");
-            if (!rv)
-                  break;
+      QRectF r;
+      if (trimMargin >= 0) {
+            QMarginsF margins(trimMargin, trimMargin, trimMargin, trimMargin);
+            r = page->tbbox() + margins;
             }
+      else
+            r = page->abbox();
+      int w = lrint(r.width()  * convDpi / DPI);
+      int h = lrint(r.height() * convDpi / DPI);
+
+      QImage printer(w, h, f);
+      printer.setDotsPerMeterX(lrint((convDpi * 1000) / INCH));
+      printer.setDotsPerMeterY(lrint((convDpi * 1000) / INCH));
+
+      printer.fill(transparent ? 0 : 0xffffffff);
+
+      double mag_ = convDpi / DPI;
+      MScore::pixelRatio = 1.0 / mag_;
+
+      QPainter p(&printer);
+      p.setRenderHint(QPainter::Antialiasing, true);
+      p.setRenderHint(QPainter::TextAntialiasing, true);
+      p.scale(mag_, mag_);
+      if (_trimMargin >= 0)
+            p.translate(-r.topLeft());
+
+      QList<Element*> pel = page->elements();
+      qStableSort(pel.begin(), pel.end(), elementLessThan);
+      paintElements(p, pel);
+
+      if (format == QImage::Format_Indexed8) {
+            //convert to grayscale & respect alpha
+            QVector<QRgb> colorTable;
+            colorTable.push_back(QColor(0, 0, 0, 0).rgba());
+            if (!transparent) {
+                  for (int i = 1; i < 256; i++)
+                        colorTable.push_back(QColor(i, i, i).rgb());
+                  }
+            else {
+                  for (int i = 1; i < 256; i++)
+                        colorTable.push_back(QColor(0, 0, 0, i).rgba());
+                  }
+            printer = printer.convertToFormat(QImage::Format_Indexed8, colorTable);
+            }
+
+      printer.save(deviceForPngs, "png");
       score->setPrinting(false);
       MScore::pixelRatio = pr;
       return rv;
