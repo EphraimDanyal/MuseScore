@@ -1,0 +1,59 @@
+init init/Treble.mscx
+cmd note-input
+cmd escape
+cmd next-chord
+cmd next-chord
+cmd select-next-chord
+cmd select-prev-chord
+palette Icon action insert-vbox
+cmd note-input
+cmd escape
+cmd next-chord
+cmd next-chord
+cmd next-chord
+cmd select-next-chord
+palette Icon action insert-vbox
+cmd note-input
+cmd escape
+cmd next-chord
+cmd next-chord
+cmd next-chord
+cmd next-chord
+cmd next-chord
+cmd next-chord
+cmd select-next-chord
+cmd select-prev-chord
+palette Icon action insert-hbox
+cmd note-input
+cmd escape
+cmd next-measure
+cmd next-measure
+cmd next-measure
+cmd next-measure
+cmd next-measure
+cmd next-measure
+cmd next-measure
+cmd next-measure
+cmd select-next-chord
+palette Icon action insert-hbox
+cmd note-input
+cmd escape
+cmd next-measure
+cmd next-measure
+cmd next-measure
+cmd next-measure
+cmd next-measure
+cmd next-measure
+cmd next-measure
+cmd next-measure
+cmd next-measure
+cmd next-measure
+cmd note-input
+cmd note-a
+cmd note-a
+cmd note-a
+cmd note-a
+cmd escape
+cmd select-prev-chord
+palette Icon action insert-measure
+test score palette_frames_1.mscx
